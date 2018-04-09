@@ -19,7 +19,7 @@ class AMLayer(nn.Module):
 
         out = F.normalize(x, p=2)
         out = out*self.s
-        normWeight = F.normalize(self.weight, p=2)
+        normWeight = F.normalize(self.weight, p=2, dim=0)
         out = th.mm(out, normWeight)
 
 

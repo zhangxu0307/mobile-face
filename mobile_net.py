@@ -54,9 +54,10 @@ class MobileNetV2(nn.Module):
         self.layers = self._make_layers(in_planes=32)
         self.conv2 = nn.Conv2d(320, 1280, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn2 = nn.BatchNorm2d(1280)
+        self.fc = nn.Linear(1280, 512)
         self.linear = nn.Linear(1280, num_classes)
 
-        self.AM = AMLayer(inputDim=1280, s=30, m=0.4, classNum=10)
+        self.AM = AMLayer(inputDim=512, s=5, m=0.5, classNum=10)
 
     def _make_layers(self, in_planes):
         layers = []
@@ -75,6 +76,7 @@ class MobileNetV2(nn.Module):
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         #out = self.linear(out)
+        out = self.fc(out)
         out = self.AM(out, y)
         return out
 
@@ -82,7 +84,7 @@ class MobileNetV2(nn.Module):
 if __name__ == '__main__':
 
     net = MobileNetV2()
-    x = Variable(torch.randn(2,3,32,32))
+    x = Variable(torch.randn(2, 3, 32, 32))
     y = net(x)
     print(y.size())
 
