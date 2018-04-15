@@ -24,9 +24,9 @@ def loadMNIST(batchSize):
 
     return train_loader, test_loader
 
+
 def loadCIFAR10(batchSize):
-    # Data
-    print('==> Preparing data..')
+
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -48,3 +48,54 @@ def loadCIFAR10(batchSize):
     classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     return trainloader, testloader
+
+
+def getMean_Std(rootPath):
+
+    data_transform = transforms.Compose([transforms.RandomSizedCrop(224), transforms.ToTensor()])
+    dataset = datasets.ImageFolder(root=rootPath, transform=data_transform)
+    print(dataset.classes)
+    dataloader = th.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2)
+
+    mean = th.zeros(3)
+    std = th.zeros(3)
+    print('==> Computing mean and std..')
+
+    for inputs, targets in dataloader:
+        for i in range(3):
+            mean[i] += inputs[:, i, :, :].mean()
+            std[i] += inputs[:, i, :, :].std()
+    mean.div_(len(dataset))
+    std.div_(len(dataset))
+
+    return mean, std
+
+def loadWebface(rootPath, batchSize, inputsize):
+
+    data_transform = transforms.Compose([
+        transforms.Resize((inputsize, inputsize)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
+    ])
+    dataset = datasets.ImageFolder(root=rootPath, transform=data_transform)
+    classNum = len(dataset.classes)
+    datasetLoader = th.utils.data.DataLoader(dataset, batch_size=batchSize, shuffle=True, num_workers=8)
+
+    return datasetLoader, classNum
+
+if __name__ == '__main__':
+
+    rootPath = "data/CASIA-WebFace/"
+    # atchSize = 8
+
+    mean, std = getMean_Std(rootPath)
+    print(mean)
+    print(std)
+
+    # dataLoader = loadWebface(rootPath, batchSize)
+    # for inputs, targets in dataLoader:
+    #     print("input", inputs.size())
+    #     print("target", targets)
+

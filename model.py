@@ -100,7 +100,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=10575):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
@@ -110,9 +110,12 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.linear = nn.Linear(512*block.expansion, num_classes)
 
-        self.AM = AMLayer(512*block.expansion, s=30, m=0.6, classNum=10)
+        #self.linear = nn.Linear(512*block.expansion, num_classes)
+        #self.AM = AMLayer(512*block.expansion, s=30, m=0.45, classNum=num_classes)
+
+        self.linear = nn.Linear(32768, 1024)
+        self.AM = AMLayer(1024, s=30, m=0.45, classNum=num_classes)
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -123,6 +126,7 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x, y):
+
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
@@ -130,25 +134,26 @@ class ResNet(nn.Module):
         out = self.layer4(out)
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
-        #out = self.linear(out)
+        # print(out.size())
+        out = self.linear(out)
         out = self.AM(out, y)
         return out
 
 
-def ResNet18():
-    return ResNet(BasicBlock, [2,2,2,2])
+def ResNet18(classNum):
+    return ResNet(BasicBlock, [2,2,2,2], classNum)
 
-def ResNet34():
-    return ResNet(BasicBlock, [3,4,6,3])
+def ResNet34(classNum):
+    return ResNet(BasicBlock, [3,4,6,3], classNum)
 
-def ResNet50():
-    return ResNet(Bottleneck, [3,4,6,3])
+def ResNet50(classNum):
+    return ResNet(Bottleneck, [3,4,6,3], classNum)
 
-def ResNet101():
-    return ResNet(Bottleneck, [3,4,23,3])
+def ResNet101(classNum):
+    return ResNet(Bottleneck, [3,4,23,3], classNum)
 
-def ResNet152():
-    return ResNet(Bottleneck, [3,8,36,3])
+def ResNet152(classNum):
+    return ResNet(Bottleneck, [3,8,36,3], classNum)
 
 
 def test():

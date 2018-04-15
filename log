@@ -1,0 +1,8 @@
+resnet101 out size
+torch.Size([2, 3, 128, 128])
+torch.Size([2, 64, 128, 128])
+torch.Size([2, 256, 128, 128])
+torch.Size([2, 512, 64, 64])
+torch.Size([2, 1024, 32, 32])
+torch.Size([2, 2048, 16, 16])
+torch.Size([2, 32768])
