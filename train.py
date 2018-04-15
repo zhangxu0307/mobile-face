@@ -11,8 +11,6 @@ from load_data import *
 import time
 
 
-
-
 def train(model, trainLoader, lr, epoch, modelPath, valid=False):
 
     # 启动cuda
@@ -24,14 +22,15 @@ def train(model, trainLoader, lr, epoch, modelPath, valid=False):
     ceriation = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=lr)
 
+    step = 0 # 总迭代次数
 
     for i in range(epoch):
-
-        start = time.time()
 
         sum_loss = 0
 
         for batch_idx, (x, target) in enumerate(trainLoader):
+
+            start = time.time()
 
             optimizer.zero_grad()
             if useCuda:
@@ -45,8 +44,16 @@ def train(model, trainLoader, lr, epoch, modelPath, valid=False):
             loss.backward(retain_graph=True)
             optimizer.step()
 
+            end = time.time()
+            batchTime = end-start
+
             if (batch_idx + 1) % 10 == 0 or (batch_idx + 1) == len(trainLoader):
-                print('==>>> epoch: {}, batch index: {}, train loss: {:.6f}'.format(i+1, batch_idx + 1, sum_loss/(batch_idx+1)))
+                print('==>>>batch index: {}, train loss: {:.6f}, running time: {:.2f}s'.format(batch_idx + 1, sum_loss/(batch_idx+1), batchTime))
+
+            step += 1
+            if (step+1) % 1000 == 0:
+                torch.save(model, modelPath)
+                print("==>>>model save finished!")
 
         if valid:
 
@@ -68,24 +75,19 @@ def train(model, trainLoader, lr, epoch, modelPath, valid=False):
                     print('==>>> epoch: {}, batch index: {}, test loss: {:.6f}, acc: {:.3f}'.format(
                         i+1, batch_idx + 1, sum_loss/(batch_idx+1), correct_cnt * 1.0 / total_cnt))
 
-        end = time.time()
-        print('==>>> epoch: {} running time: {:.2f}s'.format(i+1, end-start))
-
-    torch.save(model, modelPath)
-
 
 if __name__ == '__main__':
 
-
     rootPath = "data/CASIA-WebFace/"
     modelPath = "model_file/resnet101_AM_webface.pt"
-    batchSize = 128
+    batchSize = 96
     epoch = 20
-    lr = 0.1
+    lr = 0.01
+    inputSize = 96
 
     print("==>load data...")
     #trainLoader, testLoader = loadCIFAR10(batchSize=batchSize)
-    trainLoader, classNum = loadWebface(rootPath, batchSize, inputsize=128)
+    trainLoader, classNum = loadWebface(rootPath, batchSize, inputsize=inputSize)
     print("==>load data finished!")
 
     print('==> Building model..')
@@ -94,12 +96,13 @@ if __name__ == '__main__':
     # net = MobileNetV2()
     net = ResNet50(classNum)
 
-    print("Let's use", torch.cuda.device_count(), "GPUs!")
     import os
     # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    torch.backends.cudnn.benchmark = True
-    net = torch.nn.DataParallel(net, device_ids=range(8))
-    torch.cuda.synchronize()
+
+    # print("Let's use", torch.cuda.device_count(), "GPUs!")
+    # torch.backends.cudnn.benchmark = True
+    # net = torch.nn.DataParallel(net, device_ids=range(4))
+    # torch.cuda.synchronize()
 
     train(model=net, trainLoader=trainLoader, lr=lr, epoch=epoch, modelPath=modelPath, valid=False)
 

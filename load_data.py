@@ -81,7 +81,7 @@ def loadWebface(rootPath, batchSize, inputsize):
     ])
     dataset = datasets.ImageFolder(root=rootPath, transform=data_transform)
     classNum = len(dataset.classes)
-    datasetLoader = th.utils.data.DataLoader(dataset, batch_size=batchSize, shuffle=True, num_workers=8)
+    datasetLoader = th.utils.data.DataLoader(dataset, batch_size=batchSize, shuffle=True, num_workers=4)
 
     return datasetLoader, classNum
 
