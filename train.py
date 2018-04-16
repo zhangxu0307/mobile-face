@@ -79,7 +79,7 @@ def train(model, trainLoader, lr, epoch, modelPath, valid=False):
 if __name__ == '__main__':
 
     rootPath = "data/CASIA-WebFace/"
-    modelPath = "model_file/resnet101_AM_webface.pt"
+    modelPath = "model_file/mobilenet_AM_webface.pt"
     batchSize = 96
     epoch = 20
     lr = 0.01
@@ -91,18 +91,17 @@ if __name__ == '__main__':
     print("==>load data finished!")
 
     print('==> Building model..')
-    # net = th.load(modelPath)
+    net = th.load(modelPath)
     # net = LeNet()
-    # net = MobileNetV2()
-    net = ResNet50(classNum)
+    # net = MobileNetV2(classNum)
+    # net = ResNet50(classNum)
 
     import os
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 
     # print("Let's use", torch.cuda.device_count(), "GPUs!")
     # torch.backends.cudnn.benchmark = True
-    # net = torch.nn.DataParallel(net, device_ids=range(4))
-    # torch.cuda.synchronize()
+    # net = torch.nn.DataParallel(net, device_ids=[2, 3, 4, 5])
 
     train(model=net, trainLoader=trainLoader, lr=lr, epoch=epoch, modelPath=modelPath, valid=False)
 
