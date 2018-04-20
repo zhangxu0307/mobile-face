@@ -16,16 +16,16 @@ import time
 # print("Let's use", torch.cuda.device_count(), "GPUs!")
 
 
-def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=100):
+def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=1000):
 
     # 启动cuda
     useCuda = torch.cuda.is_available()
     if useCuda:
         model = model.cuda()
 
-    # loss, opt和数据loader
+    # loss, opt
     ceriation = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(net.parameters(), lr=lr)
+    optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=0)
 
     step = 0 # 总迭代次数
 
@@ -55,7 +55,7 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
             step += 1
             # checkpoint打印一个log
             if (batch_idx + 1) % checkPoint == 0 or (batch_idx + 1) == len(trainLoader):
-                print('==>>>epoch : {}, batch index: {}, train loss: {:.6f}, step: {}, progoress: [{}/{} ({:.0f}%)], running time: {:.2f}s'
+                print('==>>>epoch : {}, batch index: {}, train loss: {:.6f}, step: {}, progress: [{}/{} ({:.0f}%)], running time: {:.2f}s'
                       .format(i+1, batch_idx + 1, trainSumLoss/checkPoint, step,  batch_idx * len(x), len(trainLoader.dataset),
                 100. * batch_idx / len(trainLoader),  batchTime))
                 trainSumLoss = 0
@@ -90,17 +90,17 @@ if __name__ == '__main__':
 
     rootPath = "data/webface_detect/"
     modelPath = "model_file/resnet50_AM_webface_align_renorm.pt"
-    batchSize = 256
-    epoch = 20
-    lr = 0.1
+    batchSize = 96
+    epoch = 256
+    lr = 0.01
     inputSize = (96, 96)
     checkPoint = 10
 
-    print("==>load data...")
+    print("==> load data...")
     #trainLoader, testLoader = loadCIFAR10(batchSize=batchSize)
     trainLoader, classNum = loadWebface(rootPath, batchSize, inputsize=inputSize)
     # trainLoader, validLoader, classNum = getTrainValidDataLoader(rootPath, batch_size=batchSize, inputsize=inputSize, augment=True, valid_size=0.01)
-    print("==>load data finished!")
+    print("==> load data finished!")
 
     print('==> Building model..')
     # net = th.load(modelPath)
@@ -108,6 +108,7 @@ if __name__ == '__main__':
     # net = MobileNetV2(classNum)
     net = ResNet50(classNum)
     net = torch.nn.DataParallel(net, device_ids=[0, 1, 5, 7])
+    print('==> Build model finished')
 
     train(model=net, trainLoader=trainLoader, validLoader=None, lr=lr, epoch=epoch, modelPath=modelPath, valid=False, checkPoint=checkPoint)
 

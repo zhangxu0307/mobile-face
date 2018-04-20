@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from AM_loss import *
 import math
+from torch.nn.init import xavier_normal, kaiming_normal
 
 class LeNet(nn.Module):
 
@@ -132,13 +133,16 @@ class ResNet(nn.Module):
     def _reset_parameters(self):
 
         for m in self.modules():
+
             if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
+                kaiming_normal(m.weight)
+
+            # elif isinstance(m, nn.BatchNorm2d):
+            #     m.weight.data.fill_(1)
+            #     m.bias.data.zero_()
+
             elif isinstance(m, nn.Linear):
+                kaiming_normal(m.weight)
                 m.bias.data.zero_()
 
     def forward(self, x, y):
