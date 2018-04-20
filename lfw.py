@@ -5,16 +5,47 @@ import numpy as np
 import pandas as pd
 import torch as th
 from mobile_net import *
-
+from detect_align import *
 
 import os
 from matplotlib.pyplot import plot, savefig
 from glob import glob
 import pickle
 
+
 # 计算成对的余弦相似度
 def calcCosSimilarityPairs(rep1, rep2):
     return np.dot(rep1, rep2.T) / (np.linalg.norm(rep1, 2) * np.linalg.norm(rep2, 2))
+
+def example(modelPath):
+
+    net = th.load(modelPath)
+
+    imgPath1 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Aaron_Peirsol/Aaron_Peirsol_0002.jpg"
+    imgPath2 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Aaron_Peirsol/Aaron_Peirsol_0003.jpg"
+    imgPath3 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Abdel_Nasser_Assidi/Abdel_Nasser_Assidi_0001.jpg"
+    imgPath4 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Abdel_Nasser_Assidi/Abdel_Nasser_Assidi_0002.jpg"
+
+    img1 = cv2.imread(imgPath1)
+    img2 = cv2.imread(imgPath2)
+    img3 = cv2.imread(imgPath3)
+    img4 = cv2.imread(imgPath4)
+
+    face1 = detectFace(img1, 96)
+    face2 = detectFace(img2, 96)
+    face3 = detectFace(img3, 96)
+    face4 = detectFace(img4, 96)
+
+    rep1 = net.getRep(face1)
+    rep2 = net.getRep(face2)
+    rep3 = net.getRep(face3)
+    rep4 = net.getRep(face4)
+
+    # 余弦相似度
+    print(calcCosSimilarityPairs(rep1, rep2))
+    print(calcCosSimilarityPairs(rep3, rep4))
+    print(calcCosSimilarityPairs(rep1, rep3))
+    print(calcCosSimilarityPairs(rep4, rep2))
 
 # 获取负样本图像pair
 def getNegPairsImg():
@@ -77,9 +108,11 @@ def runLFW(modelPath, modelName):
     posGen = getPosPairsImg()
     for img1, img2 in posGen:
         try:
-            rep1 = net.getRep(img1)
-            rep2 = net.getRep(img2)
-            score = calcCosSimilarityPairs(rep1, rep2)
+            face1 = detectFace(img1, cropSize=96)
+            face2 = detectFace(img2, cropSize=96)
+            rep1 = net.getRep(face1)
+            rep2 = net.getRep(face2)
+            score = calcCosSimilarityPairs(rep1, rep2)[0][0]
         except:
             continue
         print(score)
@@ -91,9 +124,11 @@ def runLFW(modelPath, modelName):
     negGen = getNegPairsImg()
     for img1, img2 in negGen:
         try:
-            rep1 = net.getRep(img1)
-            rep2 = net.getRep(img2)
-            score = calcCosSimilarityPairs(rep1, rep2)
+            face1 = detectFace(img1, cropSize=96)
+            face2 = detectFace(img2, cropSize=96)
+            rep1 = net.getRep(face1)
+            rep2 = net.getRep(face2)
+            score = calcCosSimilarityPairs(rep1, rep2)[0][0]
         except:
             continue
         print(score)
@@ -151,8 +186,11 @@ def plotSimliarityHist(modelName): # 此处仍有bug，两个直方图会有混�
 
 if __name__ == '__main__':
 
-    modelPath = "model_file/mobilenet_AM_webface.pt"
+    modelPath = "model_file/renet18_AM_webface_align_renorm.pt"
     modelName = "mobile_face"
+
+    # example(modelPath)
+
     runLFW(modelPath, modelName)
     plotSimliarityHist(modelName)
 

@@ -10,8 +10,13 @@ from model import *
 from load_data import *
 import time
 
+# import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-def train(model, trainLoader, lr, epoch, modelPath, valid=False):
+# print("Let's use", torch.cuda.device_count(), "GPUs!")
+
+
+def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=100):
 
     # 启动cuda
     useCuda = torch.cuda.is_available()
@@ -26,7 +31,7 @@ def train(model, trainLoader, lr, epoch, modelPath, valid=False):
 
     for i in range(epoch):
 
-        sum_loss = 0
+        trainSumLoss = 0
 
         for batch_idx, (x, target) in enumerate(trainLoader):
 
@@ -36,72 +41,73 @@ def train(model, trainLoader, lr, epoch, modelPath, valid=False):
             if useCuda:
                 x, target = x.cuda(), target.cuda()
             x, target = Variable(x), Variable(target)
+
             out = model(x, target)
+            trainLoss = ceriation(out, target)
+            trainSumLoss += trainLoss.data[0]
 
-            loss = ceriation(out, target)
-            sum_loss += loss.data[0]
-
-            loss.backward(retain_graph=True)
+            trainLoss.backward()
             optimizer.step()
 
             end = time.time()
             batchTime = end-start
 
-            if (batch_idx + 1) % 10 == 0 or (batch_idx + 1) == len(trainLoader):
-                print('==>>>batch index: {}, train loss: {:.6f}, running time: {:.2f}s'.format(batch_idx + 1, sum_loss/(batch_idx+1), batchTime))
-
             step += 1
-            if (step+1) % 1000 == 0:
+            # checkpoint打印一个log
+            if (batch_idx + 1) % checkPoint == 0 or (batch_idx + 1) == len(trainLoader):
+                print('==>>>epoch : {}, batch index: {}, train loss: {:.6f}, step: {}, progoress: [{}/{} ({:.0f}%)], running time: {:.2f}s'
+                      .format(i+1, batch_idx + 1, trainSumLoss/checkPoint, step,  batch_idx * len(x), len(trainLoader.dataset),
+                100. * batch_idx / len(trainLoader),  batchTime))
+                trainSumLoss = 0
+
+            # 每1000次迭代save一次模型
+
+            if (step+1) % savePoint == 0:
                 torch.save(model, modelPath)
                 print("==>>>model save finished!")
 
-        if valid:
-
-            correct_cnt, sum_loss = 0, 0
-            total_cnt = 0
-
-            for batch_idx, (x, target) in enumerate(testLoader):
-                x, target = Variable(x, volatile=True), Variable(target, volatile=True)
-                if useCuda:
-                    x, target = x.cuda(), target.cuda()
-                out = model(x, target)
-
-                loss = ceriation(out, target)
-                _, pred_label = torch.max(out.data, 1)
-                total_cnt += x.data.size()[0]
-                correct_cnt += (pred_label == target.data).sum()
-
-                if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == len(testLoader):
-                    print('==>>> epoch: {}, batch index: {}, test loss: {:.6f}, acc: {:.3f}'.format(
-                        i+1, batch_idx + 1, sum_loss/(batch_idx+1), correct_cnt * 1.0 / total_cnt))
+            # # 每100个batch 做一次valid
+            # if (step+1) % 1000 == 0:
+            #
+            #     correct_cnt, sum_loss = 0, 0
+            #     total_cnt = 0
+            #
+            #     for index, (x, target) in enumerate(validLoader):
+            #         x, target = Variable(x, volatile=True), Variable(target, volatile=True)
+            #         if useCuda:
+            #             x, target = x.cuda(), target.cuda()
+            #         out = model(x, target)
+            #
+            #         validLoss = ceriation(out, target)
+            #         _, pred_label = torch.max(out.data, 1)
+            #         total_cnt += x.data.size()[0]
+            #         correct_cnt += (pred_label == target.data).sum()
+            #
+            #     print('==>>>acc: {:.3f}'.format(correct_cnt * 1.0 / total_cnt))
 
 
 if __name__ == '__main__':
 
-    rootPath = "data/CASIA-WebFace/"
-    modelPath = "model_file/mobilenet_AM_webface.pt"
-    batchSize = 96
+    rootPath = "data/webface_detect/"
+    modelPath = "model_file/resnet50_AM_webface_align_renorm.pt"
+    batchSize = 256
     epoch = 20
-    lr = 0.01
-    inputSize = 96
+    lr = 0.1
+    inputSize = (96, 96)
+    checkPoint = 10
 
     print("==>load data...")
     #trainLoader, testLoader = loadCIFAR10(batchSize=batchSize)
     trainLoader, classNum = loadWebface(rootPath, batchSize, inputsize=inputSize)
+    # trainLoader, validLoader, classNum = getTrainValidDataLoader(rootPath, batch_size=batchSize, inputsize=inputSize, augment=True, valid_size=0.01)
     print("==>load data finished!")
 
     print('==> Building model..')
-    net = th.load(modelPath)
+    # net = th.load(modelPath)
     # net = LeNet()
     # net = MobileNetV2(classNum)
-    # net = ResNet50(classNum)
+    net = ResNet50(classNum)
+    net = torch.nn.DataParallel(net, device_ids=[0, 1, 5, 7])
 
-    import os
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "6"
-
-    # print("Let's use", torch.cuda.device_count(), "GPUs!")
-    # torch.backends.cudnn.benchmark = True
-    # net = torch.nn.DataParallel(net, device_ids=[2, 3, 4, 5])
-
-    train(model=net, trainLoader=trainLoader, lr=lr, epoch=epoch, modelPath=modelPath, valid=False)
+    train(model=net, trainLoader=trainLoader, validLoader=None, lr=lr, epoch=epoch, modelPath=modelPath, valid=False, checkPoint=checkPoint)
 

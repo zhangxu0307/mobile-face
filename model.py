@@ -154,6 +154,24 @@ class ResNet(nn.Module):
         out = self.AM(out, y)
         return out
 
+    def getRep(self, x):
+
+        x = x.astype(np.float64)
+        x = (x/255-0.5) / 0.5
+        x = np.transpose(x, [2, 0, 1])
+        x = np.expand_dims(x, axis=0)
+        x = Variable(torch.from_numpy(x).float(), volatile=True).cuda()
+
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.avg_pool2d(out, 6)
+        out = out.view(out.size(0), -1)
+
+        return out.data.cpu().numpy()
+
 
 def ResNet18(classNum):
     return ResNet(BasicBlock, [2,2,2,2], classNum)

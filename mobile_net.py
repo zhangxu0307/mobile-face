@@ -84,7 +84,7 @@ class MobileNetV2(nn.Module):
     def getRep(self, x):
 
         x = x.astype(np.float64)
-        x = (x - 127.5) / 128.0
+        x = (x/255 - 0.5) / 0.5
         x = np.transpose(x, [2, 0, 1])
         x = np.expand_dims(x, axis=0)
         x = Variable(torch.from_numpy(x).float(), volatile=True).cuda()
@@ -100,26 +100,4 @@ class MobileNetV2(nn.Module):
 
 if __name__ == '__main__':
 
-    modelPath = "model_file/mobilenet_AM_webface.pt"
-    net = th.load(modelPath)
-
-    imgPath1 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Aaron_Peirsol/Aaron_Peirsol_0002.jpg"
-    imgPath2 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Aaron_Peirsol/Aaron_Peirsol_0003.jpg"
-    imgPath3 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Abdel_Nasser_Assidi/Abdel_Nasser_Assidi_0001.jpg"
-    imgPath4 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Abdel_Nasser_Assidi/Abdel_Nasser_Assidi_0002.jpg"
-
-    img1 = cv2.imread(imgPath1)
-    img2 = cv2.imread(imgPath2)
-    img3 = cv2.imread(imgPath3)
-    img4 = cv2.imread(imgPath4)
-
-    rep1 = net.getRep(img1)
-    rep2 = net.getRep(img2)
-    rep3 = net.getRep(img3)
-    rep4 = net.getRep(img4)
-
-    # 余弦相似度
-    print(np.dot(rep1, rep2.T) / (np.linalg.norm(rep1, 2) * np.linalg.norm(rep2, 2)))
-    print(np.dot(rep3, rep4.T) / (np.linalg.norm(rep3, 2) * np.linalg.norm(rep4, 2)))
-    print(np.dot(rep1, rep3.T) / (np.linalg.norm(rep1, 2) * np.linalg.norm(rep3, 2)))
-    print(np.dot(rep2, rep4.T) / (np.linalg.norm(rep2, 2) * np.linalg.norm(rep4, 2)))
+    pass

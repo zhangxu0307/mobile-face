@@ -5,6 +5,8 @@ from torch import nn
 from torch import optim
 from torchvision import datasets
 import torchvision.transforms as transforms
+import numpy as np
+from torch.utils.data.sampler import SubsetRandomSampler
 
 
 def loadMNIST(batchSize):
@@ -30,6 +32,7 @@ def loadCIFAR10(batchSize):
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
+        transforms.
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
@@ -70,14 +73,72 @@ def getMean_Std(rootPath):
 
     return mean, std
 
+
+def getTrainValidDataLoader(data_dir, batch_size, inputsize, augment, random_seed=123,
+                           valid_size=0.1,
+                           shuffle=True,
+                           num_workers=4,
+                           pin_memory=False):
+
+    error_msg = "[!] valid_size should be in the range [0, 1]."
+    assert ((valid_size >= 0) and (valid_size <= 1)), error_msg
+
+    normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+
+    # define transforms
+    valid_transform = transforms.Compose([transforms.Resize(inputsize), transforms.ToTensor(), normalize])
+
+    if augment:
+        train_transform = transforms.Compose([
+            transforms.Resize(inputsize),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ])
+    else:
+        train_transform = transforms.Compose([
+            transforms.Resize(inputsize),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+    # load the dataset
+    train_dataset = datasets.ImageFolder(root=data_dir, transform=train_transform)
+    valid_dataset = datasets.ImageFolder(root=data_dir, transform=valid_transform)
+    classNum = len(train_dataset.classes)
+
+    num_train = len(train_dataset)
+    indices = list(range(num_train))
+    split = int(np.floor(valid_size * num_train))
+
+    if shuffle:
+        np.random.seed(random_seed)
+        np.random.shuffle(indices)
+
+    train_idx, valid_idx = indices[split:], indices[:split]
+    train_sampler = SubsetRandomSampler(train_idx)
+    valid_sampler = SubsetRandomSampler(valid_idx)
+
+    train_loader = th.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, sampler=train_sampler,
+        num_workers=num_workers, pin_memory=pin_memory,
+    )
+    valid_loader = th.utils.data.DataLoader(
+        valid_dataset, batch_size=batch_size, sampler=valid_sampler,
+        num_workers=num_workers, pin_memory=pin_memory,
+    )
+
+    return train_loader, valid_loader, classNum
+
+
 def loadWebface(rootPath, batchSize, inputsize):
 
     data_transform = transforms.Compose([
-        transforms.Resize((inputsize, inputsize)),
+        transforms.Resize(inputsize),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                             std=[0.5, 0.5, 0.5])
     ])
     dataset = datasets.ImageFolder(root=rootPath, transform=data_transform)
     classNum = len(dataset.classes)

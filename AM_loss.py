@@ -17,11 +17,14 @@ class AMLayer(nn.Module):
 
     def forward(self, x, y):
 
-        out = F.normalize(x, p=2)
-        out = out*self.s
-        normWeight = F.normalize(self.weight, p=2, dim=0)
-        out = th.mm(out, normWeight)
+        out = F.normalize(x, p=2, dim=0)  # x的维度(batchsize, dim_rep)
+        out = out * self.s
 
+        normWeight = F.normalize(self.weight, p=2, dim=1)
+        out = th.mm(out, normWeight)
+        # outcheck = out.data.cpu().numpy()
+        # print(outcheck)
+        # #print(np.linalg.norm(outcheck, ord=2, axis=1, keepdims=False))
 
         y_onehot = y.data.cpu().numpy()
         y_onehot = (np.arange(self.classNum) == y_onehot[:, None]).astype(np.float32)
