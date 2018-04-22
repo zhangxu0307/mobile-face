@@ -149,7 +149,7 @@ def loadWebface(rootPath, batchSize, inputsize):
 if __name__ == '__main__':
 
     rootPath = "data/CASIA-WebFace/"
-    # atchSize = 8
+    # batchSize = 8
 
     mean, std = getMean_Std(rootPath)
     print(mean)

@@ -3,7 +3,7 @@ See the paper "Inverted Residuals and Linear Bottlenecks:
 Mobile Networks for Classification, Detection and Segmentation" for more details.
 '''
 import torch
-
+import numpy as np
 from AM_loss import *
 import cv2
 
@@ -58,7 +58,7 @@ class MobileNetV2(nn.Module):
         # self.fc = nn.Linear(1280, 512)
         self.linear = nn.Linear(1280, num_classes)
 
-        self.AM = AMLayer(inputDim=1280, s=30, m=0.45, classNum=num_classes)
+        self.AM = AMLayer(inputDim=1280, classNum=num_classes)
 
     def _make_layers(self, in_planes):
         layers = []
@@ -69,7 +69,7 @@ class MobileNetV2(nn.Module):
                 in_planes = out_planes
         return nn.Sequential(*layers)
 
-    def forward(self, x, y):
+    def forward(self, x):
 
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layers(out)
@@ -78,7 +78,7 @@ class MobileNetV2(nn.Module):
         out = out.view(out.size(0), -1)
         # out = self.linear(out)
         # out = self.fc(out)
-        out = self.AM(out, y)
+        out = self.AM(out)
         return out
 
     def getRep(self, x):
@@ -100,4 +100,4 @@ class MobileNetV2(nn.Module):
 
 if __name__ == '__main__':
 
-    pass
+    model = MobileNetV2()

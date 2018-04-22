@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from AM_loss import *
-import math
+import numpy as np
 from torch.nn.init import xavier_normal, kaiming_normal
 
 class LeNet(nn.Module):
@@ -15,7 +15,7 @@ class LeNet(nn.Module):
         self.BN1 = nn.BatchNorm2d(6)
         self.BN2 = nn.BatchNorm2d(16)
 
-        self.AM = AMLayer(inputDim=64, s=1, m=0.6, classNum=10)
+        self.AM = AMLayer(inputDim=64, classNum=10)
 
     def forward(self, x, target):
 
@@ -31,7 +31,7 @@ class LeNet(nn.Module):
 
         out = F.relu(self.fc1(out))
         #out = F.relu(self.fc2(out))
-        out = self.AM(out, target)
+        out = self.AM(out)
 
         return out
 
@@ -118,7 +118,7 @@ class ResNet(nn.Module):
         #self.AM = AMLayer(512*block.expansion, s=30, m=0.45, classNum=num_classes)
 
         self.linear = nn.Linear(32768, 1024)
-        self.AM = AMLayer(2048, s=30, m=0.45, classNum=num_classes)
+        self.AM = AMLayer(512*block.expansion, classNum=num_classes)
 
         self._reset_parameters()
 
@@ -145,7 +145,7 @@ class ResNet(nn.Module):
                 kaiming_normal(m.weight)
                 m.bias.data.zero_()
 
-    def forward(self, x, y):
+    def forward(self, x):
 
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
@@ -155,7 +155,7 @@ class ResNet(nn.Module):
         out = F.avg_pool2d(out, 6)
         out = out.view(out.size(0), -1)
         # out = self.linear(out)
-        out = self.AM(out, y)
+        out = self.AM(out)
         return out
 
     def getRep(self, x):

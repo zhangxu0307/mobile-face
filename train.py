@@ -1,22 +1,17 @@
 import torch.optim as optim
-
 import torchvision
 import torchvision.transforms as transforms
-
-import argparse
-
 from mobile_net import *
 from model import *
 from load_data import *
 import time
+from net_sphere import *
 
-# import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
-# print("Let's use", torch.cuda.device_count(), "GPUs!")
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 
-def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=1000):
+def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=500):
 
     # 启动cuda
     useCuda = torch.cuda.is_available()
@@ -24,8 +19,8 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
         model = model.cuda()
 
     # loss, opt
-    ceriation = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=0)
+    ceriation = AMLoss(s=30, m=0.4, classNum=classNum)
+    optimizer = optim.Adam(net.parameters(), lr=lr)
 
     step = 0 # 总迭代次数
 
@@ -42,7 +37,7 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
                 x, target = x.cuda(), target.cuda()
             x, target = Variable(x), Variable(target)
 
-            out = model(x, target)
+            out = model(x)
             trainLoss = ceriation(out, target)
             trainSumLoss += trainLoss.data[0]
 
@@ -89,10 +84,10 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
 if __name__ == '__main__':
 
     rootPath = "data/webface_detect/"
-    modelPath = "model_file/resnet50_AM_webface_align_renorm.pt"
-    batchSize = 96
-    epoch = 256
-    lr = 0.01
+    modelPath = "model_file/mobilefacev2_webface_align.pt"
+    batchSize = 256
+    epoch = 10
+    lr = 0.1
     inputSize = (96, 96)
     checkPoint = 10
 
@@ -105,9 +100,10 @@ if __name__ == '__main__':
     print('==> Building model..')
     # net = th.load(modelPath)
     # net = LeNet()
-    # net = MobileNetV2(classNum)
-    net = ResNet50(classNum)
-    net = torch.nn.DataParallel(net, device_ids=[0, 1, 5, 7])
+    net = MobileNetV2(classNum)
+    # net = ResNet34(classNum)
+    # net = sphere20a()
+    # net = torch.nn.DataParallel(net, device_ids=[5, 7])
     print('==> Build model finished')
 
     train(model=net, trainLoader=trainLoader, validLoader=None, lr=lr, epoch=epoch, modelPath=modelPath, valid=False, checkPoint=checkPoint)

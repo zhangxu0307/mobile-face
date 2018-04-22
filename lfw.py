@@ -12,6 +12,8 @@ from matplotlib.pyplot import plot, savefig
 from glob import glob
 import pickle
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+
 
 # 计算成对的余弦相似度
 def calcCosSimilarityPairs(rep1, rep2):
@@ -186,10 +188,10 @@ def plotSimliarityHist(modelName): # 此处仍有bug，两个直方图会有混�
 
 if __name__ == '__main__':
 
-    modelPath = "model_file/renet18_AM_webface_align_renorm.pt"
-    modelName = "mobile_face"
+    modelPath = "model_file/mobilefacev2_webface_align.pt"
+    modelName = "resnet34"
 
-    # example(modelPath)
+    example(modelPath)
 
     runLFW(modelPath, modelName)
     plotSimliarityHist(modelName)
