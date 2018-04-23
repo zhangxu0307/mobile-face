@@ -6,8 +6,7 @@ from MTCNN_pytorch.src import detect_faces
 
 detector = dlib.get_frontal_face_detector()
 # detector = dlib.cnn_face_detection_model_v1('model_file/mmod_human_face_detector.dat')
-landmark_predictor = dlib.shape_predictor('model_file/shape_predictor_5_face_landmarks.dat')
-img = cv2.imread('data/LFW/lfw-deepfunneled/lfw-deepfunneled/Abdul_Rahman/Abdul_Rahman_0001.jpg')
+landmark_predictor = dlib.shape_predictor('model_file/dlib/shape_predictor_5_face_landmarks.dat')
 
 def detectFace(img, cropSize=112):
 

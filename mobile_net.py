@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from AM_loss import *
 import cv2
+from net_sphere import *
 
 
 class Block(nn.Module):
@@ -59,6 +60,7 @@ class MobileNetV2(nn.Module):
         self.linear = nn.Linear(1280, num_classes)
 
         self.AM = AMLayer(inputDim=1280, classNum=num_classes)
+        self.sphereLayer = AngleLinear(1280, num_classes)
 
     def _make_layers(self, in_planes):
         layers = []
@@ -78,7 +80,8 @@ class MobileNetV2(nn.Module):
         out = out.view(out.size(0), -1)
         # out = self.linear(out)
         # out = self.fc(out)
-        out = self.AM(out)
+        # out = self.AM(out)
+        out = self.sphereLayer(out)
         return out
 
     def getRep(self, x):

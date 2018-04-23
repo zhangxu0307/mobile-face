@@ -6,6 +6,8 @@ import pandas as pd
 import torch as th
 from mobile_net import *
 from detect_align import *
+from net_sphere import *
+from model import *
 
 import os
 from matplotlib.pyplot import plot, savefig
@@ -19,9 +21,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 def calcCosSimilarityPairs(rep1, rep2):
     return np.dot(rep1, rep2.T) / (np.linalg.norm(rep1, 2) * np.linalg.norm(rep2, 2))
 
-def example(modelPath):
 
-    net = th.load(modelPath)
+def example(net, imgSize=(96, 96)):
 
     imgPath1 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Aaron_Peirsol/Aaron_Peirsol_0002.jpg"
     imgPath2 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/Aaron_Peirsol/Aaron_Peirsol_0003.jpg"
@@ -37,6 +38,11 @@ def example(modelPath):
     face2 = detectFace(img2, 96)
     face3 = detectFace(img3, 96)
     face4 = detectFace(img4, 96)
+
+    face1 = cv2.resize(face1, imgSize)
+    face2 = cv2.resize(face2, imgSize)
+    face3 = cv2.resize(face3, imgSize)
+    face4 = cv2.resize(face4, imgSize)
 
     rep1 = net.getRep(face1)
     rep2 = net.getRep(face2)
@@ -99,19 +105,19 @@ def getPosPairsImg():
         yield img1, img2
 
 # 测试LFW数据集相似度分布情况
-def runLFW(modelPath, modelName):
+def runLFW(net, modelName, imgSize):
 
     acc = 0
     posScore = []
     negScore = []
-
-    net = th.load(modelPath)
 
     posGen = getPosPairsImg()
     for img1, img2 in posGen:
         try:
             face1 = detectFace(img1, cropSize=96)
             face2 = detectFace(img2, cropSize=96)
+            face1 = cv2.resize(face1, imgSize)
+            face2 = cv2.resize(face2, imgSize)
             rep1 = net.getRep(face1)
             rep2 = net.getRep(face2)
             score = calcCosSimilarityPairs(rep1, rep2)[0][0]
@@ -128,6 +134,8 @@ def runLFW(modelPath, modelName):
         try:
             face1 = detectFace(img1, cropSize=96)
             face2 = detectFace(img2, cropSize=96)
+            face1 = cv2.resize(face1, imgSize)
+            face2 = cv2.resize(face2, imgSize)
             rep1 = net.getRep(face1)
             rep2 = net.getRep(face2)
             score = calcCosSimilarityPairs(rep1, rep2)[0][0]
@@ -160,41 +168,37 @@ def plotSimliarityHist(modelName): # 此处仍有bug，两个直方图会有混�
 
 
 # # 使用余弦相似度卡阈值计算准确率
-# def runLFWScore(modelName, threshold):
-#
-#     acc = 0
-#
-#     negFile = open('data/lfw_neg_' + modelName + '.pkl', 'rb')
-#     negPairs = pickle.load(negFile)
-#
-#     for pair in negPairs:
-#         x1 = pair[0]
-#         x2 = pair[1]
-#         score = calcCosSimilarityPairs(x1, x2)
-#         if score < threshold:
-#             acc += 1
-#
-#     posFile = open('data/lfw_pos_' + modelName + '.pkl', 'rb')
-#     posPairs = pickle.load(posFile)
-#
-#     for pair in posPairs:
-#         x1 = pair[0]
-#         x2 = pair[1]
-#         score = calcCosSimilarityPairs(x1, x2)
-#         if score > threshold:
-#             acc += 1
-#     print("lfw cos classify acc:", acc/(len(posPairs)+len(negPairs)))
+def LFWAccScore(modelName, threshold):
+
+    negCSV = os.path.join("data", 'neg_score_' + modelName + ".csv")
+    posCSV = os.path.join("data", 'pos_score_' + modelName + ".csv")
+
+    negScore = pd.read_csv(negCSV)
+    posScore = pd.read_csv(posCSV)
+
+    negScore = negScore["0"] < threshold
+    posScore = posScore["0"] > threshold
+
+    acc = (negScore.sum()+posScore.sum())/(len(negScore)+len(posScore))
+
+    print("acc:", acc)
 
 
 if __name__ == '__main__':
 
-    modelPath = "model_file/mobilefacev2_webface_align.pt"
-    modelName = "resnet34"
+    modelPath = "model_file/resnet34_webface_align.pt"
+    modelName = modelPath.replace('.', '/').split('/')[1]
+    print("model:", modelName)
+    #
+    net = ResNet34(classNum=10575)
+    net.load_state_dict(th.load(modelPath))
+    net = net.cuda()
+    #
+    # net = th.load(modelPath)
+    #
+    example(net, imgSize=(96, 96))
+    # runLFW(net, modelName, imgSize=(96, 96))
+    # plotSimliarityHist(modelName)
 
-    example(modelPath)
-
-    runLFW(modelPath, modelName)
-    plotSimliarityHist(modelName)
-
-    # threshold = 0.5
-    # runLFWScore(modelName, threshold)
+    # threshold = 0.28
+    # LFWAccScore(modelName, threshold)

@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from AM_loss import *
 import numpy as np
 from torch.nn.init import xavier_normal, kaiming_normal
+from net_sphere import *
 
 class LeNet(nn.Module):
 
@@ -119,6 +120,7 @@ class ResNet(nn.Module):
 
         self.linear = nn.Linear(32768, 1024)
         self.AM = AMLayer(512*block.expansion, classNum=num_classes)
+        self.sphereLayer = AngleLinear(512*block.expansion, num_classes)
 
         self._reset_parameters()
 
@@ -155,7 +157,8 @@ class ResNet(nn.Module):
         out = F.avg_pool2d(out, 6)
         out = out.view(out.size(0), -1)
         # out = self.linear(out)
-        out = self.AM(out)
+        # out = self.AM(out)
+        out = self.sphereLayer(out)
         return out
 
     def getRep(self, x):

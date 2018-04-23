@@ -19,8 +19,11 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
         model = model.cuda()
 
     # loss, opt
-    ceriation = AMLoss(s=30, m=0.4, classNum=classNum)
-    optimizer = optim.Adam(net.parameters(), lr=lr)
+    # ceriation = AMLoss(s=10, m=0.4, classNum=classNum)
+    # optimizer = optim.Adam(net.parameters(), lr=lr)
+    ceriation = AngleLoss()
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
+
 
     step = 0 # 总迭代次数
 
@@ -58,7 +61,7 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
             # 每1000次迭代save一次模型
 
             if (step+1) % savePoint == 0:
-                torch.save(model, modelPath)
+                torch.save(model.state_dict(), modelPath)
                 print("==>>>model save finished!")
 
             # # 每100个batch 做一次valid
@@ -84,11 +87,11 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
 if __name__ == '__main__':
 
     rootPath = "data/webface_detect/"
-    modelPath = "model_file/mobilefacev2_webface_align.pt"
+    modelPath = "model_file/mobilenetv2_webface_align.pt"
     batchSize = 256
     epoch = 10
     lr = 0.1
-    inputSize = (96, 96)
+    inputSize = (112, 96)
     checkPoint = 10
 
     print("==> load data...")
@@ -98,6 +101,7 @@ if __name__ == '__main__':
     print("==> load data finished!")
 
     print('==> Building model..')
+    print("==> model path:", modelPath)
     # net = th.load(modelPath)
     # net = LeNet()
     net = MobileNetV2(classNum)
