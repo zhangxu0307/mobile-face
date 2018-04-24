@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 import math
 import numpy as np
+from AM_loss import *
 
 class AngleLinear(nn.Module):
 
@@ -96,10 +97,11 @@ class AngleLoss(nn.Module):
 
 
 class sphere20a(nn.Module):
-    def __init__(self,classnum=10574,feature=False):
+    def __init__(self,classnum=10575,feature=False):
         super(sphere20a, self).__init__()
         self.classnum = classnum
         self.feature = feature
+
         #input = B*3*112*96
         self.conv1_1 = nn.Conv2d(3,64,3,2,1) #=>B*64*56*48
         self.relu1_1 = nn.PReLU(64)
@@ -151,10 +153,24 @@ class sphere20a(nn.Module):
         self.relu4_3 = nn.PReLU(512)
 
         self.fc5 = nn.Linear(512*7*6,512)
-        self.fc6 = AngleLinear(512,self.classnum)
+        # self.fc6 = AngleLinear(512, self.classnum)
+        self.fc6 = AMLayer(512, self.classnum)
 
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+
+        for m in self.modules():
+
+            if isinstance(m, nn.Conv2d):
+                xavier_normal(m.weight)
+
+            elif isinstance(m, nn.Linear):
+                xavier_normal(m.weight)
+                m.bias.data.zero_()
 
     def forward(self, x):
+
         x = self.relu1_1(self.conv1_1(x))
         x = x + self.relu1_3(self.conv1_3(self.relu1_2(self.conv1_2(x))))
 

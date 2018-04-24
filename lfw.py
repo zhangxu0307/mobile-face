@@ -189,15 +189,15 @@ if __name__ == '__main__':
     modelPath = "model_file/resnet34_webface_align.pt"
     modelName = modelPath.replace('.', '/').split('/')[1]
     print("model:", modelName)
-    #
-    net = ResNet34(classNum=10575)
+
+    # net = th.load(modelPath)
+    net = ResNet34(10575)
     net.load_state_dict(th.load(modelPath))
     net = net.cuda()
-    #
-    # net = th.load(modelPath)
-    #
-    example(net, imgSize=(96, 96))
-    # runLFW(net, modelName, imgSize=(96, 96))
+    net = net.eval()
+
+    example(net, imgSize=(112, 96))
+    runLFW(net, modelName, imgSize=(112, 96))
     # plotSimliarityHist(modelName)
 
     # threshold = 0.28

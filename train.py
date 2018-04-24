@@ -8,7 +8,7 @@ import time
 from net_sphere import *
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 
 
 def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=500):
@@ -19,11 +19,11 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
         model = model.cuda()
 
     # loss, opt
-    # ceriation = AMLoss(s=10, m=0.4, classNum=classNum)
-    # optimizer = optim.Adam(net.parameters(), lr=lr)
-    ceriation = AngleLoss()
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
+    ceriation = AMLoss(s=30, m=0.35, classNum=classNum)
+    optimizer = optim.Adam(net.parameters(), lr=lr)
 
+    # ceriation = AngleLoss()
+    # optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
 
     step = 0 # 总迭代次数
 
@@ -41,6 +41,7 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
             x, target = Variable(x), Variable(target)
 
             out = model(x)
+
             trainLoss = ceriation(out, target)
             trainSumLoss += trainLoss.data[0]
 
@@ -87,13 +88,14 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
 if __name__ == '__main__':
 
     rootPath = "data/webface_detect/"
-    modelPath = "model_file/mobilenetv2_webface_align.pt"
+    modelPath = "model_file/resnet34_webface_align.pt"
     batchSize = 256
     epoch = 10
     lr = 0.1
     inputSize = (112, 96)
     checkPoint = 10
 
+    #
     print("==> load data...")
     #trainLoader, testLoader = loadCIFAR10(batchSize=batchSize)
     trainLoader, classNum = loadWebface(rootPath, batchSize, inputsize=inputSize)
@@ -102,11 +104,11 @@ if __name__ == '__main__':
 
     print('==> Building model..')
     print("==> model path:", modelPath)
-    # net = th.load(modelPath)
     # net = LeNet()
-    net = MobileNetV2(classNum)
-    # net = ResNet34(classNum)
+    #net = MobileNetV2(classNum)
+    net = ResNet34(classNum)
     # net = sphere20a()
+    # net.load_state_dict(th.load(modelPath))
     # net = torch.nn.DataParallel(net, device_ids=[5, 7])
     print('==> Build model finished')
 

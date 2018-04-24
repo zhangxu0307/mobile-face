@@ -29,10 +29,11 @@ class Block(nn.Module):
                 nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False),
                 nn.BatchNorm2d(out_planes),
             )
+        self.relu = th.nn.PReLU()
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = F.relu(self.bn2(self.conv2(out)))
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.relu(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
         out = out + self.shortcut(x) if self.stride==1 else out
         return out
@@ -59,6 +60,8 @@ class MobileNetV2(nn.Module):
         # self.fc = nn.Linear(1280, 512)
         self.linear = nn.Linear(1280, num_classes)
 
+        self.relu = th.nn.PReLU()
+
         self.AM = AMLayer(inputDim=1280, classNum=num_classes)
         self.sphereLayer = AngleLinear(1280, num_classes)
 
@@ -73,9 +76,9 @@ class MobileNetV2(nn.Module):
 
     def forward(self, x):
 
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.relu(self.bn1(self.conv1(x)))
         out = self.layers(out)
-        out = F.relu(self.bn2(self.conv2(out)))
+        out = self.relu(self.bn2(self.conv2(out)))
         out = F.avg_pool2d(out, 6)
         out = out.view(out.size(0), -1)
         # out = self.linear(out)
@@ -92,9 +95,9 @@ class MobileNetV2(nn.Module):
         x = np.expand_dims(x, axis=0)
         x = Variable(torch.from_numpy(x).float(), volatile=True).cuda()
 
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.relu(self.bn1(self.conv1(x)))
         out = self.layers(out)
-        out = F.relu(self.bn2(self.conv2(out)))
+        out = self.relu(self.bn2(self.conv2(out)))
         out = F.avg_pool2d(out, 6)
         out = out.view(out.size(0), -1)
 
