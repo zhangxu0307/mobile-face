@@ -3,12 +3,13 @@ import dlib
 import os
 from PIL import Image
 from MTCNN_pytorch.src import detect_faces
+import numpy as np
 
 detector = dlib.get_frontal_face_detector()
 # detector = dlib.cnn_face_detection_model_v1('model_file/mmod_human_face_detector.dat')
 landmark_predictor = dlib.shape_predictor('model_file/dlib/shape_predictor_5_face_landmarks.dat')
 
-def detectFace(img, cropSize=112):
+def detectFaceDlib(img, cropSize=112):
 
     dets = detector(img, 1)
 
@@ -60,6 +61,24 @@ def detect_MTCNN_pytorch(img, cropSize=112):
     return faceImg
 
 
+def detectFace(img, cropSize=(112, 96)):
+
+    try:
+        faceImg = detectFaceDlib(img, cropSize=112)  # 先用dilib检测，若失败，换用MTCNN，全部失败则跳过
+        # print("dlib dtected")
+        faceImg = cv2.resize(faceImg, cropSize)
+        return faceImg
+    except:
+        try:
+            faceImg = detect_MTCNN_pytorch(img, cropSize=112)
+            # print("mtcnn dtected")
+            faceImg = cv2.resize(faceImg, cropSize)
+            return faceImg
+        except:
+            print("detect fail")
+            return None
+
+
 def detectAllWebface(rootPath, saveRoot):
 
     failcnt = 0
@@ -71,17 +90,12 @@ def detectAllWebface(rootPath, saveRoot):
                     imgPath = os.path.join(rootPath, dir, file)
                     print(imgPath)
                     img = cv2.imread(imgPath)
-                    try:
-                        faceImg = detectFace(img, cropSize=112) # 先用dilib检测，若失败，换用MTCNN，全部失败则跳过
-                        print("dlib dtected")
-                    except:
-                        try:
-                            faceImg = detect_MTCNN_pytorch(img, cropSize=112)
-                            print("mtcnn dtected")
-                        except:
-                            failcnt += 1
-                            print("detect fail:", failcnt)
-                            continue
+                    faceImg = detectFace(img, cropSize=(112, 96))
+
+                    if isinstance(faceImg, type(np.array)):
+                        failcnt += 1
+                        print("fail num:", failcnt)
+                        continue
 
                     if dir not in os.listdir(saveRoot):
                         os.mkdir(os.path.join(saveRoot, dir))
@@ -92,6 +106,6 @@ def detectAllWebface(rootPath, saveRoot):
 if __name__ == '__main__':
 
     webfaceRoot = "data/CASIA-WebFace/"
-    saveRoot = "data/webface_detect_5_points/"
+    saveRoot = "data/webface_detect_mix/"
 
     detectAllWebface(webfaceRoot, saveRoot)

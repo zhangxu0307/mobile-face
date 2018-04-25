@@ -34,15 +34,10 @@ def example(net, imgSize=(96, 96)):
     img3 = cv2.imread(imgPath3)
     img4 = cv2.imread(imgPath4)
 
-    face1 = detectFace(img1, 96)
-    face2 = detectFace(img2, 96)
-    face3 = detectFace(img3, 96)
-    face4 = detectFace(img4, 96)
-
-    face1 = cv2.resize(face1, imgSize)
-    face2 = cv2.resize(face2, imgSize)
-    face3 = cv2.resize(face3, imgSize)
-    face4 = cv2.resize(face4, imgSize)
+    face1 = detectFace(img1, imgSize)
+    face2 = detectFace(img2, imgSize)
+    face3 = detectFace(img3, imgSize)
+    face4 = detectFace(img4, imgSize)
 
     rep1 = net.getRep(face1)
     rep2 = net.getRep(face2)
@@ -56,10 +51,10 @@ def example(net, imgSize=(96, 96)):
     print(calcCosSimilarityPairs(rep4, rep2))
 
 # 获取负样本图像pair
-def getNegPairsImg():
+def getNegPairsImg(pairsTxT, filenameTxt, v):
 
-    negPairsTxt = pd.read_csv("data/LFW/negative_pairs.txt", sep="   ", header=0)
-    imgPath = pd.read_csv("data/LFW/Path_lfw2.txt", header=-1)
+    negPairsTxt = pd.read_csv(pairsTxT, sep="   ", header=0)
+    imgPath = pd.read_csv(filenameTxt, header=-1)
     negPairsNum = len(negPairsTxt)
     print("neg pairs num:", negPairsNum)
 
@@ -70,8 +65,8 @@ def getNegPairsImg():
         path1 = imgPath.ix[index1 - 1, 0]
         path2 = imgPath.ix[index2 - 1, 0]
 
-        path1 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/" + path1
-        path2 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/" + path2
+        path1 = os.path.join(rootPath, path1)
+        path2 = os.path.join(rootPath, path2)
         print(path1)
         print(path2)
 
@@ -81,10 +76,10 @@ def getNegPairsImg():
         yield img1, img2
 
 # 获取正样本图像pair
-def getPosPairsImg():
+def getPosPairsImg(pairsTxT, filenameTxt, rootPath):
 
-    posPairsTxt = pd.read_csv("data/LFW/postive_pairs.txt", sep="   ", header=0)
-    imgPath = pd.read_csv("data/LFW/Path_lfw2.txt", header=-1)
+    posPairsTxt = pd.read_csv(pairsTxT, sep="   ", header=0)
+    imgPath = pd.read_csv(filenameTxt, header=-1)
     posPairsNum = len(posPairsTxt)
     print("pos pairs num:", posPairsNum)
 
@@ -94,8 +89,8 @@ def getPosPairsImg():
         path1 = imgPath.ix[index1 - 1, 0]
         path2 = imgPath.ix[index2 - 1, 0]
 
-        path1 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/" + path1
-        path2 = "data/LFW/lfw-deepfunneled/lfw-deepfunneled/" + path2
+        path1 = os.path.join(rootPath, path1)
+        path2 = os.path.join(rootPath, path2)
         print(path1)
         print(path2)
 
@@ -105,19 +100,16 @@ def getPosPairsImg():
         yield img1, img2
 
 # 测试LFW数据集相似度分布情况
-def runLFW(net, modelName, imgSize):
+def runLFW(net, modelName, imgSize, posPairsTxT, negPairsTxT, filenameTxT, rootPath):
 
     posScore = []
     negScore = []
 
-    posGen = getPosPairsImg()
+    posGen = getPosPairsImg(posPairsTxT, filenameTxT, rootPath)
     for img1, img2 in posGen:
         try:
-            face1 = detectFace(img1, cropSize=96)
-            face2 = detectFace(img2, cropSize=96)
-
-            face1 = cv2.resize(face1, imgSize)
-            face2 = cv2.resize(face2, imgSize)
+            face1 = detectFace(img1, cropSize=imgSize)
+            face2 = detectFace(img2, cropSize=imgSize)
 
             rep1 = net.getRep(face1)
             rep2 = net.getRep(face2)
@@ -126,24 +118,32 @@ def runLFW(net, modelName, imgSize):
         except:
             continue
         print(score)
+        if score < 0.6:
+            cv2.imshow("face1:", face1)
+            cv2.imshow("face2:", face2)
+            cv2.waitKey()
         posScore.append(score)
 
     posCsv = pd.DataFrame(posScore)
     posCsv.to_csv("data/pos_score_"+modelName+".csv", index=False)
 
-    negGen = getNegPairsImg()
+    negGen = getNegPairsImg(negPairsTxT, filenameTxT, rootPath)
     for img1, img2 in negGen:
         try:
-            face1 = detectFace(img1, cropSize=96)
-            face2 = detectFace(img2, cropSize=96)
-            face1 = cv2.resize(face1, imgSize)
-            face2 = cv2.resize(face2, imgSize)
+            face1 = detectFace(img1, cropSize=imgSize)
+            face2 = detectFace(img2, cropSize=imgSize)
+
             rep1 = net.getRep(face1)
             rep2 = net.getRep(face2)
+
             score = calcCosSimilarityPairs(rep1, rep2)[0][0]
         except:
             continue
         print(score)
+        if score > 0.6:
+            cv2.imshow("face1:", face1)
+            cv2.imshow("face2:", face2)
+            cv2.waitKey()
         negScore.append(score)
 
     negCsv = pd.DataFrame(negScore)
@@ -186,19 +186,24 @@ def LFWAccScore(modelName, threshold):
 
 if __name__ == '__main__':
 
-    modelPath = "model_file/sphereface_webface_align.pt"
+    posPairsTxT = "data/LFW/postive_pairs.txt"
+    negPairsTxT = "data/LFW/negative_pairs.txt"
+    filenameTxT = "data/LFW/Path_lfw2.txt"
+    rootPath = "data/LFW/lfw/"
+
+    modelPath = "model_file/mobilenetv2_webface_align_m05.pt"
     modelName = modelPath.replace('.', '/').split('/')[1]
     print("model:", modelName)
 
-    # net = th.load(modelPath)
-    net = sphere20a(10574)
+    net = th.load(modelPath)
+    net = MobileNetV2(10575)
     net.load_state_dict(th.load(modelPath))
     net = net.cuda()
     net = net.eval()
 
     example(net, imgSize=(112, 96))
-    runLFW(net, modelName, imgSize=(112, 96))
+    runLFW(net, modelName, imgSize=(112, 96), posPairsTxT=posPairsTxT, negPairsTxT=negPairsTxT, filenameTxT=filenameTxT, rootPath=rootPath)
     plotSimliarityHist(modelName)
 
-    threshold = 0.75
+    threshold = 0.57
     LFWAccScore(modelName, threshold)

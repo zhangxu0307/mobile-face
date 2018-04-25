@@ -8,7 +8,7 @@ import time
 from net_sphere import *
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 
 def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=500):
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     modelPath = "model_file/mobilenetv2_webface_align_m05.pt"
     batchSize = 256
     epoch = 10
-    lr = 0.1
+    lr = 0.001
     inputSize = (112, 96)
     checkPoint = 10
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     net = MobileNetV2(classNum)
     # net = ResNet34(classNum)
     # net = sphere20a()
-    # net.load_state_dict(th.load(modelPath))
+    net.load_state_dict(th.load(modelPath))
     # net = torch.nn.DataParallel(net, device_ids=[5, 7])
     print('==> Build model finished')
 
