@@ -153,8 +153,8 @@ class sphere20a(nn.Module):
         self.relu4_3 = nn.PReLU(512)
 
         self.fc5 = nn.Linear(512*7*6,512)
-        # self.fc6 = AngleLinear(512, self.classnum)
-        self.fc6 = AMLayer(512, self.classnum)
+        self.fc6 = AngleLinear(512, self.classnum)
+        # self.fc6 = AMLayer(512, self.classnum)
 
         self._reset_parameters()
 

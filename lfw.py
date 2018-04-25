@@ -7,7 +7,7 @@ import torch as th
 from mobile_net import *
 from detect_align import *
 from net_sphere import *
-from model import *
+from resnet import *
 
 import os
 from matplotlib.pyplot import plot, savefig
@@ -107,7 +107,6 @@ def getPosPairsImg():
 # 测试LFW数据集相似度分布情况
 def runLFW(net, modelName, imgSize):
 
-    acc = 0
     posScore = []
     negScore = []
 
@@ -116,10 +115,13 @@ def runLFW(net, modelName, imgSize):
         try:
             face1 = detectFace(img1, cropSize=96)
             face2 = detectFace(img2, cropSize=96)
+
             face1 = cv2.resize(face1, imgSize)
             face2 = cv2.resize(face2, imgSize)
+
             rep1 = net.getRep(face1)
             rep2 = net.getRep(face2)
+
             score = calcCosSimilarityPairs(rep1, rep2)[0][0]
         except:
             continue
@@ -153,7 +155,6 @@ def plotSimliarityHist(modelName): # 此处仍有bug，两个直方图会有混�
     # 绘制负样本对得分
     filePath = "data/neg_score_"+modelName+".csv"
     data = pd.read_csv(filePath)
-    print(data)
     hist = data["0"].hist()
     fig1 = hist.get_figure()
     fig1.savefig('data/neg_score_' + modelName + ".jpg")
@@ -161,7 +162,6 @@ def plotSimliarityHist(modelName): # 此处仍有bug，两个直方图会有混�
     # 绘制正样本对得分
     filePath = "data/pos_score_" + modelName + ".csv"
     data = pd.read_csv(filePath)
-    print(data)
     hist = data["0"].hist()
     fig2 = hist.get_figure()
     fig2.savefig('data/pos_score_' + modelName + ".jpg")
@@ -176,29 +176,29 @@ def LFWAccScore(modelName, threshold):
     negScore = pd.read_csv(negCSV)
     posScore = pd.read_csv(posCSV)
 
-    negScore = negScore["0"] < threshold
+    negScore = negScore["0"] <= threshold
     posScore = posScore["0"] > threshold
 
     acc = (negScore.sum()+posScore.sum())/(len(negScore)+len(posScore))
 
-    print("acc:", acc)
+    print("lfw acc:", acc)
 
 
 if __name__ == '__main__':
 
-    modelPath = "model_file/resnet34_webface_align.pt"
+    modelPath = "model_file/sphereface_webface_align.pt"
     modelName = modelPath.replace('.', '/').split('/')[1]
     print("model:", modelName)
 
     # net = th.load(modelPath)
-    net = ResNet34(10575)
+    net = sphere20a(10574)
     net.load_state_dict(th.load(modelPath))
     net = net.cuda()
     net = net.eval()
 
     example(net, imgSize=(112, 96))
     runLFW(net, modelName, imgSize=(112, 96))
-    # plotSimliarityHist(modelName)
+    plotSimliarityHist(modelName)
 
-    # threshold = 0.28
-    # LFWAccScore(modelName, threshold)
+    threshold = 0.75
+    LFWAccScore(modelName, threshold)

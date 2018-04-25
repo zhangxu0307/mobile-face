@@ -2,13 +2,13 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from mobile_net import *
-from model import *
+from resnet import *
 from load_data import *
 import time
 from net_sphere import *
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 
 def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=500):
@@ -19,7 +19,7 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
         model = model.cuda()
 
     # loss, opt
-    ceriation = AMLoss(s=30, m=0.35, classNum=classNum)
+    ceriation = AMLoss(s=30, m=0.5, classNum=classNum)
     optimizer = optim.Adam(net.parameters(), lr=lr)
 
     # ceriation = AngleLoss()
@@ -88,25 +88,23 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
 if __name__ == '__main__':
 
     rootPath = "data/webface_detect/"
-    modelPath = "model_file/resnet34_webface_align.pt"
+    modelPath = "model_file/mobilenetv2_webface_align_m05.pt"
     batchSize = 256
     epoch = 10
     lr = 0.1
     inputSize = (112, 96)
     checkPoint = 10
 
-    #
     print("==> load data...")
-    #trainLoader, testLoader = loadCIFAR10(batchSize=batchSize)
+    # trainLoader, testLoader = loadCIFAR10(batchSize=batchSize)
     trainLoader, classNum = loadWebface(rootPath, batchSize, inputsize=inputSize)
-    # trainLoader, validLoader, classNum = getTrainValidDataLoader(rootPath, batch_size=batchSize, inputsize=inputSize, augment=True, valid_size=0.01)
     print("==> load data finished!")
 
     print('==> Building model..')
     print("==> model path:", modelPath)
     # net = LeNet()
-    #net = MobileNetV2(classNum)
-    net = ResNet34(classNum)
+    net = MobileNetV2(classNum)
+    # net = ResNet34(classNum)
     # net = sphere20a()
     # net.load_state_dict(th.load(modelPath))
     # net = torch.nn.DataParallel(net, device_ids=[5, 7])

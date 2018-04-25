@@ -27,16 +27,6 @@ class AMLayer(nn.Module):
         out = th.mm(out, normWeight)
         out = out.clamp(-1, 1)
 
-        # w = self.weight
-        # ww = w.renorm(2, 1, 1e-5)
-        # xlen = x.pow(2).sum(1).pow(0.5)  # size=B
-        # wlen = ww.pow(2).sum(0).pow(0.5)  # size=Classnum
-        #
-        # cos_theta = x.mm(ww)  # size=(B,Classnum)
-        # cos_theta = cos_theta / xlen.view(-1, 1) / wlen.view(1, -1)
-        # cos_theta = cos_theta.clamp(-1, 1)
-        # out = cos_theta
-
         return out
 
 class AMLoss(nn.Module):
@@ -64,15 +54,6 @@ class AMLoss(nn.Module):
         # y_onehot = Variable(th.from_numpy(y_onehot).cuda(), requires_grad=False)
 
         out = x - y_onehot
-
-        # logpt = F.log_softmax(out)
-        # logpt = logpt.gather(1, y)
-        # logpt = logpt.view(-1)
-        # pt = Variable(logpt.data.exp())
-        #
-        # loss = -1 * (1 - pt) ** self.gamma * logpt
-        # loss = loss.mean()
-
         loss = self.loss(out, y)
 
         return loss

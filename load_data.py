@@ -52,28 +52,6 @@ def loadCIFAR10(batchSize):
 
     return trainloader, testloader
 
-
-def getMean_Std(rootPath):
-
-    data_transform = transforms.Compose([transforms.RandomSizedCrop(224), transforms.ToTensor()])
-    dataset = datasets.ImageFolder(root=rootPath, transform=data_transform)
-    print(dataset.classes)
-    dataloader = th.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2)
-
-    mean = th.zeros(3)
-    std = th.zeros(3)
-    print('==> Computing mean and std..')
-
-    for inputs, targets in dataloader:
-        for i in range(3):
-            mean[i] += inputs[:, i, :, :].mean()
-            std[i] += inputs[:, i, :, :].std()
-    mean.div_(len(dataset))
-    std.div_(len(dataset))
-
-    return mean, std
-
-
 def getTrainValidDataLoader(data_dir, batch_size, inputsize, augment, random_seed=123,
                            valid_size=0.1,
                            shuffle=True,
@@ -146,17 +124,14 @@ def loadWebface(rootPath, batchSize, inputsize):
 
     return datasetLoader, classNum
 
+
 if __name__ == '__main__':
 
     rootPath = "data/CASIA-WebFace/"
-    # batchSize = 8
+    batchSize = 8
 
-    mean, std = getMean_Std(rootPath)
-    print(mean)
-    print(std)
-
-    # dataLoader = loadWebface(rootPath, batchSize)
-    # for inputs, targets in dataLoader:
-    #     print("input", inputs.size())
-    #     print("target", targets)
+    dataLoader = loadWebface(rootPath, batchSize, inputsize=(112, 96))
+    for inputs, targets in dataLoader:
+        print("input", inputs.size())
+        print("target", targets)
 
