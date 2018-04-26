@@ -4,17 +4,21 @@ matplotlib.use('Agg')
 import numpy as np
 import pandas as pd
 import torch as th
-from mobile_net import *
-from detect_align import *
-from net_sphere import *
-from resnet import *
-
+from detect_align import detectFace
+from mobile_net import MobileNetV2
+from resnet import ResNet34, ResNet18, ResNet50
+from load_data import *
+import time
+from net_sphere import sphere20a, AngleLoss
+from mobilenetv2_modify import MobileNetV2_modify
+import torch
+from AM_loss import AMLoss
 import os
 from matplotlib.pyplot import plot, savefig
 from glob import glob
 import pickle
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 
 # 计算成对的余弦相似度
@@ -100,10 +104,9 @@ def getPosPairsImg(pairsTxT, filenameTxt, rootPath):
         yield img1, img2
 
 # 测试LFW数据集相似度分布情况
-def runLFW(net, modelName, imgSize, posPairsTxT, negPairsTxT, filenameTxT, rootPath):
+def runLFWPosPairs(net, modelName, imgSize, posPairsTxT, filenameTxT, rootPath):
 
     posScore = []
-    negScore = []
 
     posGen = getPosPairsImg(posPairsTxT, filenameTxT, rootPath)
     for img1, img2 in posGen:
@@ -118,14 +121,19 @@ def runLFW(net, modelName, imgSize, posPairsTxT, negPairsTxT, filenameTxT, rootP
         except:
             continue
         print(score)
-        if score < 0.6:
-            cv2.imshow("face1:", face1)
-            cv2.imshow("face2:", face2)
-            cv2.waitKey()
+        # if score < 0.6:
+        #     cv2.imshow("face1:", face1)
+        #     cv2.imshow("face2:", face2)
+        #     cv2.waitKey()
         posScore.append(score)
 
     posCsv = pd.DataFrame(posScore)
     posCsv.to_csv("data/pos_score_"+modelName+".csv", index=False)
+
+# 测试LFW数据集相似度分布情况
+def runLFWNegPairs(net, modelName, imgSize, negPairsTxT, filenameTxT, rootPath):
+
+    negScore = []
 
     negGen = getNegPairsImg(negPairsTxT, filenameTxT, rootPath)
     for img1, img2 in negGen:
@@ -140,10 +148,10 @@ def runLFW(net, modelName, imgSize, posPairsTxT, negPairsTxT, filenameTxT, rootP
         except:
             continue
         print(score)
-        if score > 0.6:
-            cv2.imshow("face1:", face1)
-            cv2.imshow("face2:", face2)
-            cv2.waitKey()
+        # if score > 0.6:
+        #     cv2.imshow("face1:", face1)
+        #     cv2.imshow("face2:", face2)
+        #     cv2.waitKey()
         negScore.append(score)
 
     negCsv = pd.DataFrame(negScore)
@@ -189,21 +197,21 @@ if __name__ == '__main__':
     posPairsTxT = "data/LFW/postive_pairs.txt"
     negPairsTxT = "data/LFW/negative_pairs.txt"
     filenameTxT = "data/LFW/Path_lfw2.txt"
-    rootPath = "data/LFW/lfw/"
+    rootPath = "data/LFW/lfw-deepfunneled/lfw-deepfunneled"
 
-    modelPath = "model_file/mobilenetv2_webface_align_m05.pt"
+    modelPath = "model_file/sphere20a_20171020.pth"
     modelName = modelPath.replace('.', '/').split('/')[1]
     print("model:", modelName)
 
-    net = th.load(modelPath)
-    net = MobileNetV2(10575)
+    net = sphere20a(10574)
     net.load_state_dict(th.load(modelPath))
     net = net.cuda()
     net = net.eval()
 
     example(net, imgSize=(112, 96))
-    runLFW(net, modelName, imgSize=(112, 96), posPairsTxT=posPairsTxT, negPairsTxT=negPairsTxT, filenameTxT=filenameTxT, rootPath=rootPath)
+    runLFWPosPairs(net, modelName, imgSize=(112, 96), posPairsTxT=posPairsTxT, filenameTxT=filenameTxT, rootPath=rootPath)
+    runLFWNegPairs(net, modelName, imgSize=(112, 96), negPairsTxT=negPairsTxT, filenameTxT=filenameTxT, rootPath=rootPath)
     plotSimliarityHist(modelName)
 
-    threshold = 0.57
+    threshold = 0.58
     LFWAccScore(modelName, threshold)

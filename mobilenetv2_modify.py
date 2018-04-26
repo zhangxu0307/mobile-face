@@ -39,7 +39,7 @@ class Block(nn.Module):
         return out
 
 
-class MobileNetV2(nn.Module):
+class MobileNetV2_modify(nn.Module):
     # (expansion, out_planes, num_blocks, stride)
     cfg = [(1,  16, 1, 1),
            (6,  24, 2, 2),  # NOTE: change stride 2 -> 1 for CIFAR10
@@ -50,22 +50,22 @@ class MobileNetV2(nn.Module):
            (6, 320, 1, 1)]
 
     def __init__(self, num_classes=10575, feature=False):
-        super(MobileNetV2, self).__init__()
-        # NOTE: change conv1 stride 2 -> 1 for CIFAR10
+
+        super(MobileNetV2_modify, self).__init__()
 
         self.feature = feature
 
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(32)
         self.layers = self._make_layers(in_planes=32)
-        self.conv2 = nn.Conv2d(320, 1280, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn2 = nn.BatchNorm2d(1280)
+        # self.conv2 = nn.Conv2d(320, 1280, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn2 = nn.BatchNorm2d(320)
 
-        self.linear = nn.Linear(1280, num_classes)
+        self.linear = nn.Linear(320*6*7, 512)
 
         self.relu = th.nn.PReLU()
 
-        self.AM = AMLayer(inputDim=1280, classNum=num_classes)
+        self.AM = AMLayer(inputDim=512, classNum=num_classes)
         # self.sphereLayer = AngleLinear(1280, num_classes)
 
     def _make_layers(self, in_planes):
@@ -81,14 +81,13 @@ class MobileNetV2(nn.Module):
 
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.layers(out)
-        out = self.relu(self.bn2(self.conv2(out)))
-        out = F.avg_pool2d(out, 6)
+        out = self.relu(self.bn2(out))
         out = out.view(out.size(0), -1)
-
+        out = self.linear(out)
         if self.feature:
             return out
-
         out = self.AM(out)
+        # out = self.sphereLayer(out)
         return out
 
     def getRep(self, x):
@@ -101,13 +100,13 @@ class MobileNetV2(nn.Module):
 
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.layers(out)
-        out = self.relu(self.bn2(self.conv2(out)))
-        out = F.avg_pool2d(out, 6)
+        out = self.relu(self.bn2(out))
         out = out.view(out.size(0), -1)
+        out = self.linear(out)
 
         return out.data.cpu().numpy()
 
 
 if __name__ == '__main__':
 
-    model = MobileNetV2()
+    model = MobileNetV2_modify()

@@ -1,14 +1,16 @@
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-from mobile_net import *
-from resnet import *
+from mobile_net import MobileNetV2
+from resnet import ResNet34, ResNet18, ResNet50
 from load_data import *
 import time
-from net_sphere import *
-
+from net_sphere import sphere20a, AngleLoss
+from mobilenetv2_modify import MobileNetV2_modify
+import torch
+from AM_loss import AMLoss
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 
 def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, checkPoint=10, savePoint=500):
@@ -19,8 +21,8 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
         model = model.cuda()
 
     # loss, opt
-    ceriation = AMLoss(s=30, m=0.5, classNum=classNum)
-    optimizer = optim.Adam(net.parameters(), lr=lr)
+    ceriation = AMLoss(s=30, m=0.45, classNum=classNum)
+    optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=0)
 
     # ceriation = AngleLoss()
     # optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
@@ -87,11 +89,15 @@ def train(model, trainLoader, validLoader, lr, epoch, modelPath, valid=False, ch
 
 if __name__ == '__main__':
 
+    import datetime
+    nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print("time start train:", nowTime)
+
     rootPath = "data/webface_detect/"
-    modelPath = "model_file/mobilenetv2_webface_align_m05.pt"
+    modelPath = "model_file/mobilenetv2_webface_align_m04.pt"
     batchSize = 256
     epoch = 10
-    lr = 0.001
+    lr = 0.1
     inputSize = (112, 96)
     checkPoint = 10
 
@@ -106,7 +112,7 @@ if __name__ == '__main__':
     net = MobileNetV2(classNum)
     # net = ResNet34(classNum)
     # net = sphere20a()
-    net.load_state_dict(th.load(modelPath))
+    # net.load_state_dict(th.load(modelPath))
     # net = torch.nn.DataParallel(net, device_ids=[5, 7])
     print('==> Build model finished')
 

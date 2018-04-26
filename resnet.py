@@ -68,9 +68,11 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, num_blocks, num_classes=10575):
+    def __init__(self, block, num_blocks, num_classes=10575, feature=False):
 
         super(ResNet, self).__init__()
+
+        self.feature = feature
 
         self.in_planes = 64
 
@@ -122,7 +124,9 @@ class ResNet(nn.Module):
         out = self.layer4(out)
         out = F.avg_pool2d(out, 6)
         out = out.view(out.size(0), -1)
-        # out = self.linear(out)
+
+        if self.feature:
+            return out
 
         out = self.AM(out)
         # out = self.sphereLayer(out)
@@ -149,18 +153,18 @@ class ResNet(nn.Module):
         return out.data.cpu().numpy()
 
 
-def ResNet18(classNum):
-    return ResNet(BasicBlock, [2,2,2,2], classNum)
+def ResNet18(classNum=10575, feature=False):
+    return ResNet(BasicBlock, [2,2,2,2], classNum, feature)
 
-def ResNet34(classNum):
-    return ResNet(BasicBlock, [3,4,6,3], classNum)
+def ResNet34(classNum=10575, feature=False):
+    return ResNet(BasicBlock, [3,4,6,3], classNum, feature)
 
-def ResNet50(classNum):
-    return ResNet(Bottleneck, [3,4,6,3], classNum)
+def ResNet50(classNum=10575, feature=False):
+    return ResNet(Bottleneck, [3,4,6,3], classNum, feature)
 
-def ResNet101(classNum):
-    return ResNet(Bottleneck, [3,4,23,3], classNum)
+def ResNet101(classNum=10575, feature=False):
+    return ResNet(Bottleneck, [3,4,23,3], classNum, feature)
 
-def ResNet152(classNum):
-    return ResNet(Bottleneck, [3,8,36,3], classNum)
+def ResNet152(classNum=10575, feature=False):
+    return ResNet(Bottleneck, [3,8,36,3], classNum, feature)
 
