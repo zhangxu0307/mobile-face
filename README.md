@@ -27,3 +27,5 @@ try on face recognition with mobile deep learning architecture
 * [AM softmax](https://arxiv.org/abs/1801.05599)
 * [resnet](https://arxiv.org/abs/1512.03385)
 * [mobilenetv2](https://arxiv.org/abs/1801.04381)
+
+Thanks to the [carwin](https://github.com/clcarwin), this code is heavily based on sphereface_pytorch
