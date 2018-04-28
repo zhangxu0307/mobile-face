@@ -39,7 +39,7 @@ def detect_MTCNN_pytorch(img, cropSize=112):
 
     # 过滤置信度低的人脸
     print(faceBoundingBox[-1])
-    if faceBoundingBox[-1] < 0.98:
+    if faceBoundingBox[-1] < 0.90:
         raise ValueError("confidence is too low")
 
     x1 = int(faceBoundingBox[0])
@@ -65,13 +65,13 @@ def detectFace(img, cropSize=(112, 96)):
 
     try:
         faceImg = detectFaceDlib(img, cropSize=112)  # 先用dilib检测，若失败，换用MTCNN，全部失败则跳过
-        # print("dlib dtected")
+        print("dlib dtected")
         faceImg = cv2.resize(faceImg, cropSize)
         return faceImg
     except:
         try:
             faceImg = detect_MTCNN_pytorch(img, cropSize=112)
-            # print("mtcnn dtected")
+            print("mtcnn dtected")
             faceImg = cv2.resize(faceImg, cropSize)
             return faceImg
         except:
@@ -82,6 +82,7 @@ def detectFace(img, cropSize=(112, 96)):
 def detectAllWebface(rootPath, saveRoot):
 
     failcnt = 0
+    imgNum = 0
 
     for root, dirs, files in os.walk(rootPath):
         for dir in dirs:
@@ -89,12 +90,16 @@ def detectAllWebface(rootPath, saveRoot):
                 for file in subfiles:
                     imgPath = os.path.join(rootPath, dir, file)
                     print(imgPath)
+
                     img = cv2.imread(imgPath)
+                    imgNum += 1
+
                     faceImg = detectFace(img, cropSize=(112, 96))
 
-                    if isinstance(faceImg, type(np.array)):
+                    if type(faceImg) is not np.ndarray:
                         failcnt += 1
                         print("fail num:", failcnt)
+                        print("img num:", imgNum)
                         continue
 
                     if dir not in os.listdir(saveRoot):
@@ -106,6 +111,6 @@ def detectAllWebface(rootPath, saveRoot):
 if __name__ == '__main__':
 
     webfaceRoot = "data/CASIA-WebFace/"
-    saveRoot = "data/webface_detect_mix/"
+    saveRoot = "data/webface_detect_dlib_mtcnn/"
 
     detectAllWebface(webfaceRoot, saveRoot)
